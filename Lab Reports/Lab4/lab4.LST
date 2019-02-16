@@ -1,0 +1,80 @@
+  ADDR B1 B2 B3 B4 C:\Users\Benjamin\Desktop\UWF\UWF Spring 2018\   PAGE       1
+
+                   N       equ     10
+
+                           org     $00
+                   negCnt  rmb     1
+                   posCnt  rmb     1
+                   evenCnt rmb     1
+                   oddCnt  rmb     1
+
+                           org     $100
+  0100 80 A4 F6 90 array   fcb     $80,$A4,$F6,$90,$E8,$C2,$74,$53,$11,$67
+. 0104 E8 C2 74 53
+. 0108 11 67
+
+                           org     $B600
+  B600 C6 00               ldab    #$00                    ;[b] must start as 0
+  B602 D7 00               stab    negCnt                  ;each of these values
+.                  must also be init to 0
+  B604 D7 01               stab    posCnt
+  B606 D7 02               stab    evenCnt
+  B608 D7 03               stab    oddCnt
+
+  B60A CE 01 00    loop    ldx     #array                  ;start at beginning
+.                  of array
+
+  B60D 3A                  abx                             ;move to array + [b]
+.                  : [b] will be counter variable
+                                                           ;X stores mem(array)
+  B60E 1E 00 80 0E         brset   0,X %10000000 isNeg     ;tests for neg
+  B612 1F 00 80 0F         brclr   0,X %10000000 isPos     ;tests for pos
+  B616 1F 00 01 10 eve     brclr   0,X %00000001 isEve     ;tests for even
+  B61A 1E 00 01 11         brset   0,X %00000001 isOdd     ;tests for odd
+  B61E 20 14               bra     done                    ;move to end of
+.                  current loop, should never reach this command, but is here as
+.                  safegaurd
+
+  B620 7C 00 00    isNeg   inc     negCnt                  ;negative value
+.                  located, negCnt+=1, cannot also be positive, move to eve/odd
+  B623 20 F1               bra eve
+  B625 7C 00 01    isPos   inc     posCnt                  ;positive value
+.                  located, posCnt+=1, move to eve/odd
+  B628 20 EC               bra eve
+  B62A 7C 00 02    isEve   inc     evenCnt                 ;even value located,
+.                  eveCnt+=1, cannot also be odd, move to done
+  B62D 20 05               bra done
+  B62F 7C 00 03    isOdd   inc     oddCnt                  ;odd value located,
+.                  oddCnt+=1, move to done
+  B632 20 00               bra done                        ;no more comparisons,
+.                  move to end of current loop
+
+  B634 5C          done    incb
+  B635 C1 0A               cmpb    #N
+  B637 24 02               bhs exit                        ;move to next element
+.                  in array
+  B639 20 CF               bra loop
+
+  B63B 3F          exit    swi                             ;end of code
+
+
+
+
+  Symbol Table 
+
+  ISNEG              B620
+  EXIT               B63B
+  DONE               B634
+  Symbol Table     C:\Users\Benjamin\Desktop\UWF\UWF Spring 2018\   PAGE       2
+
+  ISEVE              B62A
+  EVE                B616
+  N                  000A
+  ISPOS              B625
+  ISODD              B62F
+  EVENCNT            0002
+  ODDCNT             0003
+  NEGCNT             0000
+  POSCNT             0001
+  ARRAY              0100
+  LOOP               B60A

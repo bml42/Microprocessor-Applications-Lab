@@ -1,0 +1,35 @@
+  ADDR B1 B2 B3 B4 C:\Users\Benjamin\Desktop\UWF\UWF Spring 2018\   PAGE       1
+
+                   N       equ     10      ; array count
+
+                           org     $00
+  0000 03 18 0F 4A array   fcb     3,24,15,74,4,10,13,12,9,28
+. 0004 04 0A 0D 0C
+. 0008 09 1C
+
+                           org     $b600
+  B600 96 00               ldaa    array   ; set array[0] as the temporary array
+.                  max
+  B602 C6 01               ldab    #1      ; initialize loop index to 1
+  B604 CE 00 00    loop    ldx     #array  ; point X to array[0]
+  B607 3A                  abx             ; compute the address of array[i]
+  B608 A1 00               cmpa    0,X     ; compare temp. array max to the next
+.                  element
+  B60A 24 02               bhs     chkend  ; do we need to update the temporary
+.                  array max?
+  B60C A6 00               ldaa    0,X     ; update the temporary array max
+  B60E C1 09       chkend  cmpb    #N-1    ; compare loop index with the loop
+.                  limit
+  B610 27 03               beq     exit    ; is the whole array checked yet?
+  B612 5C                  incb            ; increment loop index
+  B613 20 EF               bra     loop
+  B615 97 20       exit    staa    $20     ; save the array max
+  B617 3F                  swi             ; terminate program
+
+  Symbol Table 
+
+  CHKEND             B60E
+  EXIT               B615
+  N                  000A
+  ARRAY              0000
+  LOOP               B604

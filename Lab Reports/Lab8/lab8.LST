@@ -1,0 +1,110 @@
+  ADDR B1 B2 B3 B4 C:\Users\Benjamin\Desktop\UWF\UWF Spring 2018\   PAGE       1
+
+                   ;lab 8 Benjamin Linam 4/4/18
+
+                   REGBAS  EQU     $1000   ;BASE ADDRESS OF I/O REG BLOCK
+                   PORTA   EQU     $00     ;OFFSET OF PORTA
+                   PORTC   EQU     $03     ;OFFSET OF PORTC
+                   DDRC    EQU     $07     ;OFFSET OF DATA DIRECTION REG FOR
+.                  PORT C
+                   TOC2    EQU     $18     ;OFFSET OF TOC2 FROM REGBAS
+                   TCNT    EQU     $0E     ;OFFSET OF TCNT FROM REGBAS
+                   TCTL1   EQU     $20     ;OFFSET OF TCTL1 FROM REGBAS
+                   TFLG1   EQU     $23     ;OFFSET OF TFLG1 FROM REGBAS
+                   TOGGLE  EQU     $40     ;VALUE TO SELECT TOGGLE ACTION OF PIN
+.                  OC2
+                   OC2     EQU     $40     ;MASK TO SELECT OC2 PIN AND OC2F FLAG
+                   CLEAR   EQU     $40     ;VALUE TO CLEAR OC2F FLAG
+
+                           ORG     $B600
+  B600 CE 10 00            LDX     #REGBAS         ;X -> BASE PORT REGISTER
+
+  B603 86 F8               LDAA    #$F8            ;SET PORT C AS INPUT
+  B605 A7 07               STAA    DDRC,X          ;       ""
+  B607 1C 00 40            BSET    PORTA,X OC2     ;SET OC2 PIN TO HIGH
+  B60A 86 40               LDAA    #TOGGLE         ;SELECT TOGGLE AS OUTPUT
+.                  COMPARE ACTION
+  B60C A7 20               STAA    TCTL1,X         ;       ""
+
+  B60E E6 03               LDAB    PORTC,X         ;RETRIEVES VALUE AT PORTC AND
+.                  STORE IN [B]
+  B610 C4 07               ANDB    #$07            ;RETURNS 00000XXX
+  B612 18 CE B6 5A         LDY     #HITIME         ;SET Y TO HITIME ARRAY
+  B616 58                  LSLB                    ;MULTIPLY [B] BY 2, ARRAY HAS
+.                  2-BYTE NUMBERS
+  B617 18 3A               ABY                     ;ADD [B] TO Y, Y WILL POINT
+.                  TO CORRECT HITIME VALUE
+
+  B619 EC 0E               LDD     TCNT,X          ;START OC2 WITH HIGH TIME
+.                  DELAY
+  B61B 18 E3 00            ADDD    0,Y             ;       ""
+  B61E ED 18               STD     TOC2,X          ;       ""
+  B620 86 40               LDAA    #CLEAR          ;CLEAR OC2F FLAG
+  B622 A7 23               STAA    TFLG1,X         ;       ""
+
+  B624 1F 23 40 FC high    BRCLR   TFLG1,X OC2 high        ;WAIT UNTIL OC2F FLAG
+.                  SET TO 1
+
+  B628 E6 03               LDAB    PORTC,X         ;RETRIEVES VALUE AT PORTC AND
+.                  STORE IN [B]
+  B62A C4 07               ANDB    #$07            ;RETURNS 00000XXX
+  B62C 18 CE B6 6A         LDY     #LOTIME         ;SET Y TO LOTIME ARRAY
+  B630 58                  LSLB                    ;MULTIPLY [B] BY 2, ARRAY HAS
+.                  2-BYTE NUMBERS
+  B631 18 3A               ABY                     ;ADD [B] TO Y, Y WILL POINT
+.                  TO CORRECT LOTIME VALUE
+
+  B633 EC 18               LDD     TOC2,X          ;TOGGLE OC2 PIN AFTER LOW
+.                  CYCLE
+  B635 18 E3 00            ADDD    0,Y             ;       ""
+  B638 ED 18               STD     TOC2,X          ;       ""
+  B63A 86 40               LDAA    #CLEAR          ;CLEAR THE OC2F FLAG
+  B63C A7 23               STAA    TFLG1,X         ;       ""
+  B63E 1F 23 40 FC low     BRCLR   TFLG1,X OC2 low         ;WAIT UNTIL OC2F SET
+.                  TO 1
+  B642 86 40               LDAA    #CLEAR                  ;CLEAR OC2F FLAG
+  B644 A7 23               STAA    TFLG1,X                 ;       ""
+
+  ADDR B1 B2 B3 B4 C:\Users\Benjamin\Desktop\UWF\UWF Spring 2018\   PAGE       2
+
+  B646 E6 03               LDAB    PORTC,X         ;RETRIEVES VALUE AT PORTC AND
+.                  STORE IN [B]
+  B648 C4 07               ANDB    #$07            ;RETURNS 00000XXX
+  B64A 18 CE B6 5A         LDY     #HITIME         ;SET Y TO HITIME ARRAY
+  B64E 58                  LSLB                    ;MULTIPLY [B] BY 2, ARRAY HAS
+.                  2-BYTE NUMBERS
+  B64F 18 3A               ABY                     ;ADD [B] TO Y, Y WILL POINT
+.                  TO CORRECT HITIME VALUE
+
+  B651 EC 18               LDD     TOC2,X          ;START THE NEXT OC2 COMPARE
+.                  OPERATION
+  B653 18 E3 00            ADDD    0,Y             ;WILL TOGGLE OC2 PIN HIGH
+  B656 ED 18               STD     TOC2,X                  ;       ""
+  B658 20 CA               BRA     high
+
+  B65A 00 C8 02 58 HITIME  FDB     200,600,400,500,600,350,400,450         ;HIGH
+. B65E 01 90 01 F4 TIME VALUES
+. B662 02 63 01 5E
+. B666 01 90 01 C2
+  B66A 07 08 05 78 LOTIME  FDB     1800,1400,600,500,400,150,100,50        ;LOW
+. B66E 02 58 01 F4 TIME VALUES
+. B672 01 90 00 96
+. B676 00 64 00 32
+
+  Symbol Table 
+
+  LOW                B63E
+  HIGH               B624
+  OC2                0040
+  TCTL1              0020
+  REGBAS             1000
+  CLEAR              0040
+  TFLG1              0023
+  TOGGLE             0040
+  TCNT               000E
+  PORTA              0000
+  PORTC              0003
+  DDRC               0007
+  HITIME             B65A
+  TOC2               0018
+  LOTIME             B66A

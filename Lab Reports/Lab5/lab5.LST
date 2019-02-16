@@ -1,0 +1,192 @@
+  ADDR B1 B2 B3 B4 C:\Users\Benjamin\Desktop\UWF\UWF Spring 2018\   PAGE       1
+
+                   N       EQU     4               ;Number of matrix rows
+                   M       EQU     5               ;Number of matrix columns
+                   OUTA    EQU     $FFB8           ;Address of OUTA Buffalo
+.                  subroutine
+                   OUTSTRG EQU     $FFC7           ;Address of OUTSTRG Buffalo
+.                  subroutine
+                   OUTLHLF EQU     $FFB2           ;Address of OUTLHLF Buffalo
+.                  subroutine
+                   OUTRHLF EQU     $FFB5           ;Address of OUTRHLF Buffalo
+.                  subroutine
+                   OUTCRLF EQU     $FFC4           ;Address of OUTCRLF Buffalo
+.                  subroutine
+
+                           ORG     $0100
+  0100 01 02 03 04 Matrix  FCB     01,02,03,04,05  ;Memory allocation for matrix
+. 0104 05          elements
+  0105 06 07 08 09         FCB     06,07,08,09,10
+. 0109 0A
+  010A 0B 0C 0D 0E         FCB     11,12,13,14,15
+. 010E 0F
+  010F 10 11 12 13         FCB     16,17,18,19,20
+. 0113 14
+
+                   i       RMB     1               ;Memory allocation for
+.                  variables
+                   j       RMB     1
+                   TEMP1   RMB     1
+                   TEMP2   RMB     1
+                   TEMP3   RMB     1
+                   TEMP4   RMB     1
+
+                           ORG     $B600           ;Save code in EEPROM
+                   **** Start of Main Program ****
+  B600 8E 01 FF    Main    LDS     #$01FF          ;Initialize SP
+
+  B603 CE B6 B3            LDX     #MSG1           ;Load X with base address of
+.                  MSG1
+  B606 BD FF C7            JSR     OUTSTRG         ;Call subroutine to print
+.                  MSG1
+  B609 FE 01 00            LDX     Matrix          ;Load address starting addr
+.                  of Matrix to X
+
+  B60C 8D 0B               BSR     PRINTMAT        ;Call subroutine to print
+.                  original matrix
+
+  B60E 8D 48               BSR     SWAPMAT         ;Call subroutine to swap
+.                  matrix columns
+
+  B610 CE B6 D6            LDX     #MSG2           ;Load X with base address of
+.                  MSG2
+  B613 BD FF C7            JSR     OUTSTRG         ;Call subroutine to print
+.                  MSG2
+
+  B616 8D 01               BSR     PRINTMAT        ;Call subroutine to print
+.                  modified matrix
+  B618 3F                  SWI                     ;return to Buffalo monitor
+
+                   **** Code for Subroutines ****
+  B619 86 01       PRINTMAT        LDAA    #1      ;A points to the first
+.                  element
+  B61B B7 01 14                    STAA    i       ;Store i in accumulator [A]
+  B61E 7F 01 15                    CLR     j       ;Clear value stored in j
+  B621 C6 05                       LDAB    #M      ;stores accumulator [B] with
+.                  M dimension
+  B623 CE 01 00                    LDX     #Matrix ;Load [X] with address of
+  ADDR B1 B2 B3 B4 C:\Users\Benjamin\Desktop\UWF\UWF Spring 2018\   PAGE       2
+
+.                  Matrix
+  B626 BD FF C4                    JSR     OUTCRLF ;outputs ASCII carriage and
+.                  outputs the characters
+  B629 A6 00       Loop            LDAA    0,X
+  B62B BD FF B2                    JSR     OUTLHLF ;converts left nibble of A to
+.                  ascii
+  B62E A6 00                       LDAA    0,X
+  B630 BD FF B5                    JSR     OUTRHLF ;converts right nibble of A
+.                  to ascii
+  B633 86 20                       LDAA    #$20
+  B635 BD FF B8                    JSR     OUTA    ;outputs space between
+  B638 F6 01 14                    LDAB    i       ;Load accumulator [B] with i
+  B63B C1 05                       CMPB    #M
+  B63D 27 02                       BEQ     NEXTEL
+
+  B63F 20 09                       BRA     NEXTROW ;Branch
+  B641 7F 01 14    NEXTEL          CLR     i       ;Clear value stored in i
+  B644 7C 01 15                    INC     j       ;Increment j
+  B647 BD FF C4                    JSR     OUTCRLF
+  B64A F6 01 15    NEXTROW         LDAB    j       ;load accumulator [B] with j
+  B64D C1 04                       CMPB    #N      ;Compare [B] with N dimension
+  B64F 27 06                       BEQ     LEAVE   ;Last row output to console,
+.                  return from subroutine
+  B651 7C 01 14                    INC     i       ;increment i
+  B654 08                          INX             ;increment [X] to point to
+.                  next element
+  B655 20 D2                       BRA     Loop    ;Branch back to the loop
+  B657 39          LEAVE           RTS             ;Return to subroutine
+
+  B658 86 00       SWAPMAT         LDAA    #0      ;Load accumulator [A] with 0
+  B65A B7 01 14                    STAA    i       ;Store [A] to i
+  B65D B7 01 15                    STAA    j       ;Store [A] to j
+  B660 B7 01 16                    STAA    TEMP1
+  B663 B7 01 18                    STAA    TEMP3
+  B666 86 05                       LDAA    #M      ;Load accumulator [A] with M
+  B668 B7 01 17                    STAA    TEMP2
+  B66B 86 03                       LDAA    #N-1
+  B66D B7 01 19                    STAA    TEMP4
+  B670 B6 01 14                    LDAA    i
+  B673 C6 05                       LDAB    #M      ;Load accumulator [B] with M
+  B675 3D                          MUL             ;Multiply i and M
+  B676 89 00                       ADCA    #0
+  B678 C3 01 00                    ADDD    #MATRIX ;Add accumulator D with
+.                  MATRIX
+  B67B 8F                          XGDX            ;Exchange [D] with [X]
+  B67C B6 01 19    LOOP2           LDAA    TEMP4
+  B67F F6 01 17                    LDAB    TEMP2
+  B682 3D                          MUL             ;Multiply TEMP4 and TEMP2
+  B683 89 00                       ADCA    #0
+  B685 C3 01 00                    ADDD    #MATRIX
+  B688 18 8F                       XGDY            ;Exchange [D] with [Y]
+  B68A A6 00       LOOP1           LDAA    0,X
+  B68C 18 E6 00                    LDAB    0,Y
+  B68F 18 A7 00                    STAA    0,Y
+  B692 E7 00                       STAB    0,X
+  B694 08                          INX             ;Increment X
+  B695 18 08                       INY             ;Increment Y
+  B697 7C 01 16                    INC     TEMP1   ;Increment TEMP1
+  B69A B6 01 16                    LDAA    TEMP1
+  B69D 81 05                       CMPA    #M      ;Compare accumulator [A] with
+.                  M
+  B69F 26 E9                       BNE     LOOP1
+  B6A1 7F 01 16                    CLR     TEMP1    ;Clear TEMP1
+  B6A4 7C 01 18                    INC     TEMP3    ;Increment TEMP3
+  B6A7 7A 01 19                    DEC     TEMP4    ;Decrement TEMP4
+  ADDR B1 B2 B3 B4 C:\Users\Benjamin\Desktop\UWF\UWF Spring 2018\   PAGE       3
+
+  B6AA B6 01 19                    LDAA    TEMP4
+  B6AD B1 01 18                    CMPA    TEMP3    ;Compare TEMP4 and TEMP3
+  B6B0 2C CA                       BGE     LOOP2   ;Branch if greater or equal
+
+  B6B2 39                          RTS             ;Return to subroutine
+
+                   **** Message Definitions ****
+  B6B3 54 68 65 20 MSG1    FCC     "The original matrix is as follows:"
+. B6B7 6F 72 69 67
+. B6BB 69 36 61 6C
+. B6BF 20 6D 61 74
+. B6C3 72 69 78 66
+. B6C7 69 73 20 61
+. B6CB 73 20 66 6F
+. B6CF 6C 20 6F 77
+. B6D3 73 3A
+  B6D5 04                  FCB     $04
+  B6D6 54 68 65 20 MSG2    FCC     "The modified matrix is as follows:"
+. B6DA 6D 6F 64 69
+. B6DE 66 69 65 64
+. B6E2 20 6D 61 74
+. B6E6 72 69 78 20
+. B6EA 69 73 20 61
+. B6EE 73 20 66 6F
+. B6F2 6C 6C 6F 77
+. B6F6 73 3A
+  B6F8 04                  FCB     $04
+
+
+  Symbol Table 
+
+  SWAPMAT            B658
+  OUTA               FFB8
+  LOOP1              B68A
+  LOOP2              B67C
+  I                  0114
+  J                  0115
+  M                  0005
+  N                  0004
+  NEXTEL             B641
+  OUTLHLF            FFB2
+  MATRIX             0100
+  OUTRHLF            FFB5
+  NEXTROW            B64A
+  OUTCRLF            FFC4
+  MAIN               B600
+  PRINTMAT           B619
+  LEAVE              B657
+  OUTSTRG            FFC7
+  LOOP               B629
+  TEMP1              0116
+  TEMP2              0117
+  TEMP3              0118
+  TEMP4              0119
+  MSG1               B6B3
+  MSG2               B6D6

@@ -1,0 +1,36 @@
+  ADDR B1 B2 B3 B4 C:\Users\Benjamin\Desktop\UWF\UWF Spring 2018\   PAGE       1
+
+                   HPRIO   EQU     $103C
+                   MASK    EQU     $F5
+
+                           ORG     $0200
+                   M       RMB     1       ;Reserve 1 byte for M at beginning of
+.                  external RAM
+                   N       RMB     1       ;Reserve 1 byte for N at next memory
+.                  location
+                   SUM     RMB     1       ;Reserve 1 byte for SUM at next
+.                  memory location
+
+                           ORG     $B600
+  B600 86 F5               LDAA    #MASK   ;Change HPRIO for internal read
+.                  visibility
+  B602 B7 10 3C            STAA    HPRIO
+  B605 86 05               LDAA    #5      ;initialize M to 5
+  B607 B7 02 00            STAA    M
+  B60A 86 04               LDAA    #4      ;initialize N to 4
+  B60C B7 02 01            STAA    N
+  B60F B6 02 00    LOOP    LDAA    M       ;load M into [A]
+  B612 F6 02 01            LDAB    N       ;load N into [B]
+  B615 1B                  ABA             ;[A] = [A] + [B]
+  B616 B7 02 02            STAA    SUM     ;store SUM
+  B619 20 F4               BRA     LOOP    ;Loop forever
+  B61B 3F                  SWI
+
+  Symbol Table 
+
+  MASK               00F5
+  M                  0200
+  N                  0201
+  SUM                0202
+  HPRIO              103C
+  LOOP               B60F
